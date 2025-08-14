@@ -1,0 +1,11 @@
+Epoch: 200
+LR: 0.0001
+Hidden Size: 400
+Embedding Size: 500
+Optimizer: Adam
+Slot F1: 0.929 ± 0.003
+Intent Acc: 0.942 ± 0.002
+Runs: 5
+Dropout: False
+Bidirectional: False
+Patience: 3

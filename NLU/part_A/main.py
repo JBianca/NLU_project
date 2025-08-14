@@ -15,6 +15,8 @@ import numpy as np
 from collections import Counter
 import regex as re
 import torch.backends
+import copy
+
 
 if __name__ == "__main__":
 
@@ -61,14 +63,6 @@ if __name__ == "__main__":
     slot_f1s = []
     intent_acc = []
 
-    model_name = build_model_name(
-        lr=lr,
-        slot_f1s=slot_f1s,
-        intent_acc=intent_acc,
-        bidirectional=bidirectional,
-        dropout=dropout
-    )
-    
     for x in tqdm(range(0, runs)):
         
         model = ModelIAS(hid_size, out_slot, out_int, emb_size, vocab_len, pad_index=PAD_TOKEN, use_drop=dropout, use_bidirectional=bidirectional).to(device)
@@ -97,19 +91,29 @@ if __name__ == "__main__":
 
                 if f1 > best_f1:
                     best_f1 = f1
+                    best_model = copy.deepcopy(model).to(device)
                     patience = patience_init
                 else:
                     patience -= 1
                 if patience <= 0: # Early stopping with patient
                     break
 
+        best_model.to(device)
         results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, 
                                                 criterion_intents, model, lang)
         intent_acc.append(intent_test['accuracy'])
         slot_f1s.append(results_test['total']['f'])
+
+        model_name = build_model_name(
+            lr=lr,
+            slot_f1s=slot_f1s,
+            intent_acc=intent_acc,
+            bidirectional=bidirectional,
+            dropout=dropout
+        )
         
     slot_f1s = np.asarray(slot_f1s)
     intent_acc = np.asarray(intent_acc)
 
-    save_experiment_results(model, optimizer=optimizer, lr=lr, hid_size=hid_size, emb_size=emb_size, slot_f1s=slot_f1s, intent_acc=intent_acc,
-                            losses_train=losses_train, losses_dev=losses_dev, model_name=model_name)
+    save_experiment_results(model, optimizer=optimizer, n_epochs=n_epochs, lr=lr, hid_size=hid_size, emb_size=emb_size, slot_f1s=slot_f1s, intent_acc=intent_acc,
+                            losses_train=losses_train, losses_dev=losses_dev, runs=runs, dropout=dropout, bidirectional=bidirectional, patience=patience_init, model_name=model_name)

@@ -2,8 +2,9 @@ from conll import evaluate
 from sklearn.metrics import classification_report
 import torch
 import torch.nn as nn
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=5):
     model.train()
@@ -122,8 +123,8 @@ def build_model_name(lr, slot_f1s, intent_acc, bidirectional=False, dropout=Fals
     
     return "_".join(name_parts)
 
-def save_experiment_results(model, optimizer, lr, hid_size, emb_size, slot_f1s, intent_acc,
-                            losses_train, losses_dev, model_name, results_dir="results"):
+def save_experiment_results(model, optimizer, n_epochs, lr, hid_size, emb_size, slot_f1s, intent_acc,
+                            losses_train, losses_dev, runs, dropout, bidirectional, patience, model_name, results_dir="results"):
     
     result_path = os.path.join(results_dir, model_name)
     os.makedirs(result_path, exist_ok=True)
@@ -131,12 +132,17 @@ def save_experiment_results(model, optimizer, lr, hid_size, emb_size, slot_f1s, 
     # Save results summary
     results_file = os.path.join(result_path, f"results.txt")
     with open(results_file, "w") as f:
+        f.write(f"Epoch: {n_epochs}\n")
         f.write(f"LR: {lr}\n")
         f.write(f"Hidden Size: {hid_size}\n")
         f.write(f"Embedding Size: {emb_size}\n")
         f.write("Optimizer: Adam\n")
         f.write(f"Slot F1: {slot_f1s.mean():.3f} ± {slot_f1s.std():.3f}\n")
         f.write(f"Intent Acc: {intent_acc.mean():.3f} ± {intent_acc.std():.3f}\n")
+        f.write(f"Runs: {runs}\n")
+        f.write(f"Dropout: {dropout}\n")
+        f.write(f"Bidirectional: {bidirectional}\n")
+        f.write(f"Patience: {patience}\n")
 
     print(f"Slot F1: {slot_f1s.mean():.3f} ± {slot_f1s.std():.3f}")
     print(f"Intent Acc: {intent_acc.mean():.3f} ± {intent_acc.std():.3f}")
