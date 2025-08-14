@@ -21,9 +21,9 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Load data
-    train_raw = read_file("dataset/ptb.train.txt")
-    dev_raw = read_file("dataset/ptb.valid.txt")
-    test_raw = read_file("dataset/ptb.test.txt")
+    train_raw = read_file("dataset/PennTreeBank/ptb.train.txt")
+    dev_raw = read_file("dataset/PennTreeBank/ptb.valid.txt")
+    test_raw = read_file("dataset/PennTreeBank/ptb.test.txt")
 
     # Vocab is computed only on training set 
     # We add two special tokens end of sentence and padding 
@@ -47,22 +47,24 @@ if __name__ == "__main__":
     hid_size = 500
     emb_size = 500
     vocab_len = len(lang.word2id)
-    lr = 0.001 # [0.05, 0.01] for SGD; [0.001] for Adam
+    lr = 10 # [0.05, 0.01] for SGD; [0.001] for Adam
     clip = 5 # Clip the gradient
     monotone = 5
-    n_epochs = 100
-    patience = 5
+    n_epochs = 60
+    patience = 3
     patience_AvSGD = 5
     
-    patience = 3
-    out_dropout = 0.0
-    emb_dropout = 0.0
+    out_dropout = 0.2
+    emb_dropout = 0.6
     n_layers = 1
-    weight_tying = False
-    variational_dropout = False
+    weight_tying = True
+    variational_dropout = True
+    use_avsgd = True
 
     ##############################################################
 
+    asgd_active = False
+    asgd_triggered_epoch = None
     losses_train = []
     losses_dev = []
     sampled_epochs = []
@@ -80,7 +82,7 @@ if __name__ == "__main__":
         hidden_size=hid_size,
         output_size=vocab_len,
         pad_index=lang.word2id["<pad>"],
-        out_dropout=out_dropout.5,
+        out_dropout=out_dropout,
         emb_dropout=emb_dropout,
         n_layers=n_layers,
         weight_tying=weight_tying,
@@ -127,7 +129,7 @@ if __name__ == "__main__":
                 if ppl_dev < best_ppl:
                     best_ppl = ppl_dev
                     best_model = copy.deepcopy(model).to(device)  # Save a copy of the best model
-                    patience = 5  # Reset patience because the model improved
+                    patience = 3  # Reset patience because the model improved
                 else:
                     patience -= 1  # Decrease patience if there's no improvement
 
@@ -143,12 +145,14 @@ if __name__ == "__main__":
                 losses_dev.append(np.asarray(loss_dev).mean())
 
                 # Check if it's time to switch to ASGD optimizer
-                if 't0' not in optimizer.param_groups[0] and len(best_val_loss) > monotone and loss_dev > min(best_val_loss[:-monotone] or [float('inf')]):
+                if use_avsgd and 't0' not in optimizer.param_groups[0] and len(best_val_loss) > monotone and loss_dev > min(best_val_loss[:-monotone] or [float('inf')]):
                     print('Switch to ASGD')
                     patience = patience_AvSGD
                     lr = lr*0.4
                     optimizer.param_groups[0]['lr'] = lr
                     optimizer = torch.optim.ASGD(model.parameters(), lr=lr, t0=0, lambd=0., weight_decay=1.2e-6,)
+                    asgd_triggered_epoch = epoch  # store when ASGD started
+                    asgd_active = True
 
                 # Update the best validation loss if we have a new best loss
                 if loss_dev < best_loss:
@@ -158,7 +162,9 @@ if __name__ == "__main__":
                 best_val_loss.append(loss_dev)
 
             # Update progress bar description with current metrics
-            pbar.set_description(f"Epoch {epoch} | PPL {ppl_dev:.2f} | LR {lr:.5f} | Loss {loss_dev:.4f}")
+            status = "ASGD" if asgd_active else "SGD"
+            pbar.set_description(f"PPL: {ppl_dev:.2f} | LR: {lr:.3f} | hid_s: {hid_size} | emb_s: {emb_size} | o_drop: {out_dropout} | e_drop: {emb_dropout} | wt: {weight_tying} | vd: {variational_dropout} | {status}")
+
 
             # Check if the current perplexity is the best so far
             if ppl_dev < best_ppl:
@@ -185,9 +191,22 @@ if __name__ == "__main__":
     final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)    
     print('Test ppl: ', final_ppl)
 
-    model_name = f"{best_model.__class__.__name__}_{optimizer.__class__.__name__}_PPL_{final_ppl:.2f}_LR_{lr}"
+    # Build tag list based on features
+    tags = []
+    if weight_tying:
+        tags.append("wt")
+    if variational_dropout:
+        tags.append("vd")
+    if asgd_active:  # use actual ASGD status
+        tags.append("asgd")
 
+    # Join tags with underscores if any
+    tag_str = "_" + "_".join(tags) if tags else ""
+
+    # Build model name
+    model_name = f"{best_model.__class__.__name__}{tag_str}_PPL_{final_ppl:.2f}_{emb_size}_{out_dropout}_{emb_dropout}"
     save_training_results(model, best_model, final_ppl, lr, hid_size, emb_size, clip, 
-                      n_epochs, patience, batch_train, batch_dev_test, 
-                      sampled_epochs, losses_train, losses_dev, 
-                      perplexities, plot_loss, plot_perplexity, model_name)
+                           n_epochs, sampled_epochs,  patience, patience_AvSGD, batch_train, batch_dev_test,
+                           losses_train, losses_dev, perplexities, plot_loss, plot_perplexity, model_name,
+                           out_dropout, emb_dropout, n_layers, weight_tying, variational_dropout, monotone,
+                           asgd_triggered_epoch, use_avsgd)

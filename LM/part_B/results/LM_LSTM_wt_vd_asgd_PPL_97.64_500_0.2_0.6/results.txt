@@ -1,0 +1,20 @@
+Model: LM_LSTM_wt_vd_asgd_PPL_97.64_500_0.2_0.6
+
+hid_size=500
+emb_size=500
+lr=4.0
+clip=5
+n_epochs=60
+out_dropout=0.2
+emb_dropout=0.6
+n_layers=1
+weight_tying=True
+variational_dropout=True
+monotone=5
+patience=0
+patience_AvSGD=5
+batch_train=64
+batch_dev_test=128
+test_ppl=97.64
+use_avsgd=True
+ASGD triggered at epoch: 29

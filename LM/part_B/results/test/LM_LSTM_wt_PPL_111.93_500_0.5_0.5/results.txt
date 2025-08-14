@@ -1,0 +1,20 @@
+Model: LM_LSTM_SGD_PPL_111.93_LR_2
+
+hid_size=500
+emb_size=500
+lr=2
+clip=5
+n_epochs=50
+out_dropout=0.5
+emb_dropout=0.5
+n_layers=1
+weight_tying=True
+variational_dropout=False
+monotone=5
+patience=5
+patience_AvSGD=5
+batch_train=64
+batch_dev_test=128
+test_ppl=111.93
+use_avsgd=False
+ASGD was never triggered

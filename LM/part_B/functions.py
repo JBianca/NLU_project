@@ -89,10 +89,10 @@ def plot_perplexity(epochs, perplexities, save_path, model_name=""):
     plt.close()
     
 def save_training_results(model, best_model, final_ppl, lr, hid_size, emb_size, clip, 
-                           n_epochs, patience, batch_train, batch_dev_test, 
-                           sampled_epochs, losses_train, losses_dev, 
-                           perplexities, plot_loss, plot_perplexity, model_name,
-                           results_dir="results"):
+                           n_epochs, sampled_epochs, patience, patience_AvSGD, batch_train, batch_dev_test,
+                           losses_train, losses_dev, perplexities, plot_loss, plot_perplexity, model_name,
+                           out_dropout, emb_dropout, n_layers, weight_tying, variational_dropout, monotone,
+                           asgd_triggered_epoch, use_avsgd, results_dir="results"):
 
     result_path = os.path.join(results_dir, model_name)
     os.makedirs(result_path, exist_ok=True)
@@ -106,10 +106,22 @@ def save_training_results(model, best_model, final_ppl, lr, hid_size, emb_size, 
         f.write(f"lr={lr}\n")
         f.write(f"clip={clip}\n")
         f.write(f"n_epochs={n_epochs}\n")
+        f.write(f"out_dropout={out_dropout}\n")
+        f.write(f"emb_dropout={emb_dropout}\n")
+        f.write(f"n_layers={n_layers}\n")
+        f.write(f"weight_tying={weight_tying}\n")
+        f.write(f"variational_dropout={variational_dropout}\n")
+        f.write(f"monotone={monotone}\n")        
         f.write(f"patience={patience}\n")
+        f.write(f"patience_AvSGD={patience_AvSGD}\n")
         f.write(f"batch_train={batch_train}\n")
         f.write(f"batch_dev_test={batch_dev_test}\n")
         f.write(f"test_ppl={final_ppl:.2f}\n")
+        f.write(f"use_avsgd={use_avsgd}\n")
+        if asgd_triggered_epoch is not None:
+            f.write(f"ASGD triggered at epoch: {asgd_triggered_epoch}\n")
+        else:
+            f.write("ASGD was never triggered\n")
 
     # Save loss plot
     loss_path = os.path.join(result_path, "loss_plot.png")
@@ -122,4 +134,3 @@ def save_training_results(model, best_model, final_ppl, lr, hid_size, emb_size, 
     # Save model
     model_path = os.path.join(result_path, f"{model_name}.pt")
     torch.save(best_model.state_dict(), model_path)
-

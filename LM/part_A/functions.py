@@ -88,11 +88,12 @@ def plot_perplexity(epochs, perplexities, save_path, model_name=""):
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
-
+    
 def save_training_results(model, best_model, final_ppl, lr, hid_size, emb_size, clip, 
                            n_epochs, patience, batch_train, batch_dev_test, 
                            sampled_epochs, losses_train, losses_dev, 
-                           perplexities, plot_loss, plot_perplexity, model_name,
+                           perplexities, plot_loss, plot_perplexity, model_name, 
+                           out_dropout, emb_dropout, weight_decay, n_layers,
                            results_dir="results"):
     
     result_path = os.path.join(results_dir, model_name)
@@ -107,6 +108,11 @@ def save_training_results(model, best_model, final_ppl, lr, hid_size, emb_size, 
         f.write(f"lr={lr}\n")
         f.write(f"clip={clip}\n")
         f.write(f"n_epochs={n_epochs}\n")
+        f.write(f"out_dropout={out_dropout}\n")
+        f.write(f"emb_dropout={emb_dropout}\n")
+        f.write(f"weight_decay={weight_decay}\n")
+        f.write(f"n_layers={n_layers}\n")
+
         f.write(f"patience={patience}\n")
         f.write(f"batch_train={batch_train}\n")
         f.write(f"batch_dev_test={batch_dev_test}\n")

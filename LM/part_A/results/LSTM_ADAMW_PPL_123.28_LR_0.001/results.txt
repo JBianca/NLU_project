@@ -1,0 +1,15 @@
+Model: LSTM_ADAMW_PPL_123.28_LR_0.001
+
+hid_size=200
+emb_size=300
+lr=0.001
+clip=5
+n_epochs=100
+out_dropout=0.1
+emb_dropout=0.1
+weight_decay=0.05
+n_layers=1
+patience=0
+batch_train=64
+batch_dev_test=128
+test_ppl=123.28

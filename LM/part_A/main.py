@@ -61,9 +61,9 @@ if __name__ == "__main__":
     clip = 5 # Clip the gradient
     n_epochs = 100
     patience = 3
-    out_dropout = 0.0
-    emb_dropout = 0.0
-    weight_decay = 0.0
+    out_dropout = 0.2
+    emb_dropout = 0.1
+    weight_decay = 0.05
     n_layers = 1
 
     ##############################################################
@@ -78,9 +78,7 @@ if __name__ == "__main__":
     
     ######################################################################################################### model
     '''
-    modalità: uno dei tre in base al parametro
-        model
-        optimizer
+    run example: python3 main.py --model lstm --optimizer sgd
     '''
     parser = argparse.ArgumentParser(description="Train a language model with configurable model and optimizer.")
 
@@ -128,7 +126,7 @@ if __name__ == "__main__":
             ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
             losses_dev.append(np.asarray(loss_dev).mean())
             perplexities.append(ppl_dev)
-            pbar.set_description(f"PPL: {ppl_dev:.2f} | LR: {lr:.5f} | hid_size: {hid_size} | emb_size: {emb_size} | batch_train: {batch_train} | batch_dev_test: {batch_dev_test}")
+            pbar.set_description(f"PPL: {ppl_dev:.2f} | LR: {lr:.5f} | hid_size: {hid_size} | emb_size: {emb_size} | batch_train: {batch_train} | batch_dev_test: {batch_dev_test} | o_drop: {out_dropout} | e_drop: {emb_dropout} | w_decay: {weight_decay}")
 
             if  ppl_dev < best_ppl: # The lower, the better
                 best_ppl = ppl_dev
@@ -148,4 +146,6 @@ if __name__ == "__main__":
     save_training_results(model, best_model, final_ppl, lr, hid_size, emb_size, clip, 
                       n_epochs, patience, batch_train, batch_dev_test, 
                       sampled_epochs, losses_train, losses_dev, 
-                      perplexities, plot_loss, plot_perplexity, model_name)
+                      perplexities, plot_loss, plot_perplexity, model_name,
+                      out_dropout, emb_dropout, weight_decay, n_layers
+                      )
