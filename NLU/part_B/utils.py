@@ -78,70 +78,139 @@ PAD_TOKEN = 0
 class IntentsAndSlots (data.Dataset):
     # Mandatory methods are __init__, __len__ and __getitem__
     def __init__(self, dataset, tokenizer, lang, unk='unk'):
+        # self.utterances = []
+        # self.intents = []
+        # self.slots = []
+        # self.unk = unk
+        
+        # # # ============ CHANGES FOR BERT ================
+        # # self.tokenizer = tokenizer
+        # # self.CLS_TOKEN = self.tokenizer.convert_tokens_to_ids('[CLS]')
+        # # self.SEP_TOKEN = self.tokenizer.convert_tokens_to_ids('[SEP]')
+
+        # # for x in dataset:
+        # #     self.utterances.append(x['utterance'])
+        # #     self.slots.append(x['slots'])
+        # #     self.intents.append(x['intent'])
+        # # # ============================================
+
+        #   # ============ CHANGES FOR BERT ================
+        # for x in dataset:
+        #     self.utterances.append("[CLS] " + x['utterance'] + " [SEP]")
+        #     self.slots.append("pad " + x['slots'] + " pad")
+        #     self.intents.append(x['intent'])
+        # # ============================================
+
+        # #Create maps with utterance - slots and create also attention mask and token_type_id
+        # # self.utt_ids, self.slots_ids, self.attention_mask, self.token_type_id = self.mapping_seq(self.utterances, self.slots, tokenizer, lang.slot2id) 
+    
+        # # self.intent_ids = self.mapping_lab(self.intents, lang.intent2id)
+
+        # self.utt_ids, self.slot_ids = self.mapping_seq(self.utterances, self.slots, tokenizer, lang.slot2id)
+        # self.intent_ids = self.mapping_lab(self.intents, lang.intent2id)
+
+
         self.utterances = []
         self.intents = []
         self.slots = []
         self.unk = unk
-        
-        # ============ CHANGES FOR BERT ================
-        self.tokenizer = tokenizer
-        self.CLS_TOKEN = self.tokenizer.convert_tokens_to_ids('[CLS]')
-        self.SEP_TOKEN = self.tokenizer.convert_tokens_to_ids('[SEP]')
 
         for x in dataset:
             self.utterances.append(x['utterance'])
             self.slots.append(x['slots'])
             self.intents.append(x['intent'])
-        # ============================================
 
-        #Create maps with utterance - slots and create also attention mask and token_type_id
-        self.utt_ids, self.slots_ids, self.attention_mask, self.token_type_id = self.mapping_seq(self.utterances, self.slots, tokenizer, lang.slot2id) 
+        # Corrected to return 4 values
+        self.utt_ids, self.slots_ids, self.attention_mask, self.token_type_id = self.mapping_seq(
+            self.utterances, self.slots, tokenizer, lang.slot2id
+        )
         self.intent_ids = self.mapping_lab(self.intents, lang.intent2id)
 
     def __len__(self):
         return len(self.utterances)
 
     def __getitem__(self, idx):
-        utt = torch.Tensor(self.utt_ids[idx])
-        slots = torch.Tensor(self.slots_ids[idx])
-        intent = self.intent_ids[idx]
-        attention = torch.Tensor(self.attention_mask[idx])
-        token_type_id = torch.Tensor(self.token_type_id[idx])
-        sample = {'utterance': utt, 'slots': slots, 'intent': intent, 'attention': attention, 'token_type_id': token_type_id}
+        sample = {
+        'utterance': torch.tensor(self.utt_ids[idx], dtype=torch.long),
+        'slots': torch.tensor(self.slots_ids[idx], dtype=torch.long),
+        'intent': self.intent_ids[idx],
+        'attention': torch.tensor(self.attention_mask[idx], dtype=torch.long),
+        'token_type_id': torch.tensor(self.token_type_id[idx], dtype=torch.long)
+        }
         return sample
+
+        # utt = torch.Tensor(self.utt_ids[idx])
+        # slots = torch.Tensor(self.slots_ids[idx])
+        # intent = self.intent_ids[idx]
+        # attention = torch.Tensor(self.attention_mask[idx])
+        # token_type_id = torch.Tensor(self.token_type_id[idx])
+        # sample = {'utterance': utt, 'slots': slots, 'intent': intent, 'attention': attention, 'token_type_id': token_type_id}
+        # return sample
     
     # Auxiliary methods
     
     def mapping_lab(self, data, mapper):
         return [mapper[x] if x in mapper else mapper[self.unk] for x in data]
     
-    def mapping_seq(self, utterance, slots, tokenizer, mapper_slot): 
+    # def mapping_seq(self, utterance, slots, tokenizer, mapper_slot): 
         
-        utt_tokenized, slots_tokenized = [], []
-        att_mask_list, token_type_list = [], []
+    #     utt_tokenized, slots_tokenized = [], []
+    #     att_mask_list, token_type_list = [], []
 
-        for sequence, slot in zip(utterance, slots):
+    #     for sequence, slot in zip(utterance, slots):
 
+    #         seq_tokens = []
+    #         slot_tokens = []
+    #         attention = []
+    #         token_type_id = []
+
+    #         #tokenize word per word with bert_tokenizer
+    #         for word, element in zip(sequence.split(), slot.split()):
+                
+    #             attention.append(1)
+    #             token_type_id.append(0)
+
+    #             word_tokens = tokenizer(word) # BERT
+    #             word_tokens = word_tokens[1:-1] # Remove tokens
+                
+    #             seq_tokens.extend(word_tokens["input_ids"])
+    #             slot_tokens.extend([mapper_slot[element]] + [mapper_slot['pad']] * (len(word_tokens["input_ids"]) - 1))
+
+    #             for i in range(len(word_tokens["input_ids"])-1): # Attention mask
+    #                 attention.append(1)
+    #                 token_type_id.append(0)
+
+    #         utt_tokenized.append(seq_tokens)
+    #         slots_tokenized.append(slot_tokens)
+    #         att_mask_list.append(attention)
+    #         token_type_list.append(token_type_id)
+        
+    #     return utt_tokenized, slots_tokenized, att_mask_list, token_type_list
+
+    def mapping_seq(self, utterances, slots, tokenizer, mapper_slot): 
+        utt_tokenized = []
+        slots_tokenized = []
+        att_mask_list = []
+        token_type_list = []
+
+        for utterance, slot in zip(utterances, slots):
             seq_tokens = []
             slot_tokens = []
             attention = []
             token_type_id = []
 
-            #tokenize word per word with bert_tokenizer
-            for word, element in zip(sequence.split(), slot.split()):
+            for word, element in zip(utterance.split(), slot.split()):
+                # Tokenize word
+                word_tokens = tokenizer.encode(word, add_special_tokens=False)
+                num_tokens = len(word_tokens)
                 
-                attention.append(1)
-                token_type_id.append(0)
-
-                word_tokens = tokenizer(word) # BERT
-                word_tokens = word_tokens[1:-1] # Remove tokens
-                 
-                seq_tokens.extend(word_tokens["input_ids"])
-                slot_tokens.extend([mapper_slot[element]] + [mapper_slot['pad']] * (len(word_tokens["input_ids"]) - 1))
-
-                for i in range(len(word_tokens["input_ids"])-1): # Attention mask
-                    attention.append(1)
-                    token_type_id.append(0)
+                # Extend token lists
+                seq_tokens.extend(word_tokens)
+                slot_tokens.extend([mapper_slot[element]] + [mapper_slot['pad']] * (num_tokens - 1))
+                
+                # Extend attention and token type
+                attention.extend([1] * num_tokens)
+                token_type_id.extend([0] * num_tokens)
 
             utt_tokenized.append(seq_tokens)
             slots_tokenized.append(slot_tokens)
@@ -149,7 +218,7 @@ class IntentsAndSlots (data.Dataset):
             token_type_list.append(token_type_id)
         
         return utt_tokenized, slots_tokenized, att_mask_list, token_type_list
-
+        
 # def collate_fn(data):
 #     def merge(sequences):
 #         '''
@@ -219,9 +288,6 @@ def collate_fn(data):
     attention, _ = merge(new_item['attention'])
     token_type_id, _ = merge(new_item["token_type_id"])
     
-    # Convert to proper tensor types
-    attention = torch.LongTensor(attention)
-    token_type_id = torch.LongTensor(token_type_id)
     
     src_utt = src_utt.to(device)
     y_slots = y_slots.to(device)

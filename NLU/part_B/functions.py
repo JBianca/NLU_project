@@ -13,15 +13,16 @@ def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=
     loss_array = []
     for sample in data:
         optimizer.zero_grad() # Zeroing the gradient
-        slots, intent = model(sample['utterances'], sample['attentions'], sample["token_type_ids"])
+        slots, intent = model(sample['utterances'], sample['attentions'], sample['token_type_ids'])
         loss_intent = criterion_intents(intent, sample['intents'])
         loss_slot = criterion_slots(slots, sample['y_slots'])
-        loss = loss_intent + loss_slot # In joint training we sum the losses. 
+        # assert slots.shape == sample['y_slots'].shape, f"slots have different shapes: {slots.shape}, {sample['y_slots'].shape}"
+        loss = loss_intent + loss_slot # In joint training we sum the losses.
                                        # Is there another way to do that?
         loss_array.append(loss.item())
         loss.backward() # Compute the gradient, deleting the computational graph
         # clip the gradient to avoid exploding gradients
-        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)  
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step() # Update the weights
     return loss_array
 
