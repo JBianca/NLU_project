@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 import numpy as np
 import os
+from transformers import BertConfig, BertTokenizer
 
 
 def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=5):
@@ -33,11 +34,12 @@ def eval_loop(data, criterion_slots, criterion_intents, model, lang):
     
     ref_slots = []
     hyp_slots = []
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
     #softmax = nn.Softmax(dim=1) # Use Softmax if you need the actual probability
     with torch.no_grad(): # It used to avoid the creation of computational graph
         for sample in data:
-            slots, intents = model(sample['utterances'], sample['slots_len'], sample["token_type_ids"])
+            slots, intents = model(sample['utterances'], sample['attentions'], sample["token_type_ids"])
             loss_intent = criterion_intents(intents, sample['intents'])
             loss_slot = criterion_slots(slots, sample['y_slots'])
             loss = loss_intent + loss_slot 
@@ -57,7 +59,7 @@ def eval_loop(data, criterion_slots, criterion_intents, model, lang):
                 utt_ids = sample['utterance'][id_seq][:length].tolist()
                 gt_ids = sample['y_slots'][id_seq].tolist()
                 gt_slots = [lang.id2slot[elem] for elem in gt_ids[:length]]
-                utterance = [lang.id2word[elem] for elem in utt_ids]
+                utterance = tokenizer.convert_ids_to_tokens(utt_ids)
                 to_decode = seq[:length].tolist()
 
                 new_utterance = []

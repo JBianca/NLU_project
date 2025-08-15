@@ -150,38 +150,80 @@ class IntentsAndSlots (data.Dataset):
         
         return utt_tokenized, slots_tokenized, att_mask_list, token_type_list
 
+# def collate_fn(data):
+#     def merge(sequences):
+#         '''
+#         merge from batch * sent_len to batch * max_len 
+#         '''
+#         lengths = [len(seq) for seq in sequences]
+#         max_len = 1 if max(lengths)==0 else max(lengths)
+#         # Pad token is zero in our case
+#         # So we create a matrix full of PAD_TOKEN (i.e. 0) with the shape 
+#         # batch_size X maximum length of a sequence
+#         padded_seqs = torch.LongTensor(len(sequences),max_len).fill_(0)
+#         for i, seq in enumerate(sequences):
+#             end = lengths[i]
+#             padded_seqs[i, :end] = seq # We copy each sequence into the matrix
+#         # print(padded_seqs)
+#         padded_seqs = padded_seqs.detach()  # We remove these tensors from the computational graph
+#         return padded_seqs, lengths
+#     # Sort data by seq lengths
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     data.sort(key=lambda x: len(x['utterance']), reverse=True) 
+#     new_item = {}
+#     for key in data[0].keys():
+#         new_item[key] = [d[key] for d in data]
+        
+#     # We just need one length for packed pad seq, since len(utt) == len(slots)
+#     src_utt, _ = merge(new_item['utterance'])
+#     y_slots, y_lengths = merge(new_item["slots"])
+#     intent = torch.LongTensor(new_item["intent"])
+#     attention, _ = merge(new_item['attention'])
+#     token_type_id, _ = merge(new_item["token_type_id"])
+    
+#     src_utt = src_utt.to(device) # We load the Tensor on our selected device
+#     y_slots = y_slots.to(device)
+#     intent = intent.to(device)
+#     y_lengths = torch.LongTensor(y_lengths).to(device)
+#     attention = attention.to(device)
+#     token_type_id = token_type_id.to(device)
+    
+#     new_item["utterances"] = src_utt
+#     new_item["intents"] = intent
+#     new_item["y_slots"] = y_slots
+#     new_item["slots_len"] = y_lengths
+#     new_item["attentions"] = attention
+#     new_item["token_type_ids"] = token_type_id
+    
+#     return new_item
+
 def collate_fn(data):
     def merge(sequences):
-        '''
-        merge from batch * sent_len to batch * max_len 
-        '''
         lengths = [len(seq) for seq in sequences]
         max_len = 1 if max(lengths)==0 else max(lengths)
-        # Pad token is zero in our case
-        # So we create a matrix full of PAD_TOKEN (i.e. 0) with the shape 
-        # batch_size X maximum length of a sequence
-        padded_seqs = torch.LongTensor(len(sequences),max_len).fill_(0)
+        padded_seqs = torch.LongTensor(len(sequences), max_len).fill_(0)
         for i, seq in enumerate(sequences):
             end = lengths[i]
-            padded_seqs[i, :end] = seq # We copy each sequence into the matrix
-        # print(padded_seqs)
-        padded_seqs = padded_seqs.detach()  # We remove these tensors from the computational graph
+            padded_seqs[i, :end] = seq
         return padded_seqs, lengths
-    # Sort data by seq lengths
+        
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    data.sort(key=lambda x: len(x['utterance']), reverse=True) 
+    data.sort(key=lambda x: len(x['utterance']), reverse=True)
     new_item = {}
     for key in data[0].keys():
         new_item[key] = [d[key] for d in data]
         
-    # We just need one length for packed pad seq, since len(utt) == len(slots)
     src_utt, _ = merge(new_item['utterance'])
     y_slots, y_lengths = merge(new_item["slots"])
     intent = torch.LongTensor(new_item["intent"])
     attention, _ = merge(new_item['attention'])
     token_type_id, _ = merge(new_item["token_type_id"])
     
-    src_utt = src_utt.to(device) # We load the Tensor on our selected device
+    # Convert to proper tensor types
+    attention = torch.LongTensor(attention)
+    token_type_id = torch.LongTensor(token_type_id)
+    
+    src_utt = src_utt.to(device)
     y_slots = y_slots.to(device)
     intent = intent.to(device)
     y_lengths = torch.LongTensor(y_lengths).to(device)
