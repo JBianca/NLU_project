@@ -7,7 +7,6 @@ import numpy as np
 import os
 from transformers import BertConfig, BertTokenizer
 
-
 def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=5):
     model.train()
     loss_array = []
@@ -26,7 +25,7 @@ def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=
         optimizer.step() # Update the weights
     return loss_array
 
-def eval_loop(data, criterion_slots, criterion_intents, model, lang):
+def eval_loop(data, criterion_slots, criterion_intents, model, lang, tokenizer):
     model.eval()
     loss_array = []
     

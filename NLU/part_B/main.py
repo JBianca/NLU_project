@@ -46,11 +46,13 @@ if __name__ == "__main__":
 
      # Parameters setting ==========================================================================
     
-    lr = 2e-5 
-    clip = 1.0 # Clip the gradient
+    # hid_size = 400
+    # emb_size = 300
+    lr = 0.00005
+    clip = 5 # Clip the gradient
     n_epochs = 200
-    dropout = 0.1
-    patience = 3
+    dropout = 0.2
+    patience = 5
 
     # Parameters setting ==========================================================================
 
@@ -72,16 +74,16 @@ if __name__ == "__main__":
     sampled_epochs = []
     best_f1 = 0.0
     
-    for x in range(1,n_epochs):
+    for x in tqdm(range(1,n_epochs)):
         loss = train_loop(train_loader, optimizer, criterion_slots, 
-                        criterion_intents, model, clip=clip)
+                        criterion_intents, model)
         if x % 1 == 0:
             sampled_epochs.append(x)
             losses_train.append(np.asarray(loss).mean())
-            results_dev, intent_res, loss_dev = eval_loop(dev_loader, criterion_slots, 
-                                                        criterion_intents, model, lang)
+            results_dev, intent_res, loss_dev = eval_loop(dev_loader, criterion_slots, criterion_intents, model, lang, tokenizer)
             losses_dev.append(np.asarray(loss_dev).mean())
             f1 = results_dev['total']['f']
+            
 
             if f1 > best_f1:
                 best_f1 = f1
@@ -90,13 +92,14 @@ if __name__ == "__main__":
             else:
                 patience -= 1
             if patience <= 0: # Early stopping with patient
-                break
+                break # Not nice but it keeps the code clean
 
-    best_model.to(device)
-    results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, 
-                                            criterion_intents, model, lang)
+    results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, criterion_intents, best_model, lang, tokenizer)
     intent_acc.append(intent_test['accuracy'])
     slot_f1s.append(results_test['total']['f'])
+
+    slot_f1s = np.asarray(slot_f1s)
+    intent_acc = np.asarray(intent_acc)
 
     model_name = build_model_name(
         lr=lr,
