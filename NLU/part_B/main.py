@@ -45,13 +45,13 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=64, collate_fn=collate_fn)
 
      # Parameters setting ==========================================================================
-    
-    # hid_size = 400
-    # emb_size = 300
-    lr = 0.00005
+  
+    hid_size = 768
+    emb_size = 300
+    lr = 0.0002
     clip = 5 # Clip the gradient
-    n_epochs = 200
-    dropout = 0.2
+    n_epochs = 50
+    dropout = 0.1
     patience = 5
 
     # Parameters setting ==========================================================================
@@ -62,10 +62,11 @@ if __name__ == "__main__":
     slot_f1s = []
     intent_acc = []
 
-    model = model = JointBert(config, out_slot, out_int, dropout=dropout).to(device)
+    # model = model = JointBert(config, out_slot, out_int, dropout=dropout).to(device)
+    model = JointBert(hid_size, out_slot, out_int, dropout_prob=dropout).to(device)
     model.apply(init_weights)
 
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion_slots = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
     criterion_intents = nn.CrossEntropyLoss()
 

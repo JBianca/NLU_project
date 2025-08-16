@@ -72,39 +72,33 @@ class Lang():
         for elem in elements:
                 vocab[elem] = len(vocab)
         return vocab
-    
-PAD_TOKEN = 0   
 
 class IntentsAndSlots (data.Dataset):
     # Mandatory methods are __init__, __len__ and __getitem__
     def __init__(self, dataset, tokenizer, lang, unk='unk'):
-        
         self.utterances = []
         self.intents = []
         self.slots = []
         self.unk = unk
-
+        
         for x in dataset:
-            self.utterances.append(x['utterance'])
-            self.slots.append(x['slots'])
+            self.utterances.append("[CLS] " + x['utterance'] + " [SEP]")
+            self.slots.append("pad " + x['slots'] + " pad")
             self.intents.append(x['intent'])
-
-        self.utt_ids, self.slots_ids, self.attention_mask, self.token_type_id = self.mapping_seq(
-            self.utterances, self.slots, tokenizer, lang.slot2id
-        )
+        
+        self.utt_ids, self.slots_ids, self.attention_mask, self.token_type_id = self.mapping_seq(self.utterances, self.slots, tokenizer, lang.slot2id) 
         self.intent_ids = self.mapping_lab(self.intents, lang.intent2id)
 
     def __len__(self):
         return len(self.utterances)
 
     def __getitem__(self, idx):
-        sample = {
-        'utterance': torch.tensor(self.utt_ids[idx], dtype=torch.long),
-        'slots': torch.tensor(self.slots_ids[idx], dtype=torch.long),
-        'intent': self.intent_ids[idx],
-        'attention': torch.tensor(self.attention_mask[idx], dtype=torch.long),
-        'token_type_id': torch.tensor(self.token_type_id[idx], dtype=torch.long)
-        }
+        utt = torch.Tensor(self.utt_ids[idx])
+        slots = torch.Tensor(self.slots_ids[idx])
+        intent = self.intent_ids[idx]
+        attention = torch.Tensor(self.attention_mask[idx])
+        token_type_id = torch.Tensor(self.token_type_id[idx])
+        sample = {'utterance': utt, 'slots': slots, 'intent': intent, 'attention': attention, 'token_type_id': token_type_id}
         return sample
     
     # Auxiliary methods
