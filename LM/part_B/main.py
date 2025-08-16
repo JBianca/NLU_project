@@ -15,8 +15,6 @@ import torch.optim as optim
 
 if __name__ == "__main__":
     
-    ######################################################################################################### data preparation
-
     # Use cuda if available, otherwise cpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -42,8 +40,7 @@ if __name__ == "__main__":
     dev_loader = DataLoader(dev_dataset, batch_size=batch_dev_test, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
     test_loader = DataLoader(test_dataset, batch_size=batch_dev_test, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
 
-    ######################################################################################################### parameters configuration
-    
+    # Parameters setting ==========================================================================
     hid_size = 500
     emb_size = 500
     vocab_len = len(lang.word2id)
@@ -60,8 +57,7 @@ if __name__ == "__main__":
     weight_tying = True
     variational_dropout = True
     use_avsgd = True
-
-    ##############################################################
+    # Parameters setting ==========================================================================
 
     asgd_active = False
     asgd_triggered_epoch = None
@@ -75,7 +71,7 @@ if __name__ == "__main__":
     best_loss = math.inf
     pbar = tqdm(range(1,n_epochs+1))
 
-    ######################################################################################################### model
+    # Model
 
     model = LM_LSTM(
         emb_size=emb_size,
@@ -95,7 +91,7 @@ if __name__ == "__main__":
     criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.75)
 
-    ######################################################################################################### train the model
+    # Train and valiation of the model
 
     
     # If the PPL is too high try to change the learning rate
@@ -191,7 +187,7 @@ if __name__ == "__main__":
     final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)    
     print('Test ppl: ', final_ppl)
 
-    # Build tag list based on features
+    # Naming the model
     tags = []
     if weight_tying:
         tags.append("wt")

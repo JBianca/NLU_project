@@ -4,6 +4,7 @@ import torch
 from sklearn.model_selection import train_test_split
 import torch.utils.data as data
 
+# Taken from lab
 def load_data(path):
     '''
         input: path/to/data
@@ -14,6 +15,7 @@ def load_data(path):
         dataset = json.loads(f.read())
     return dataset
 
+# Properly split the dataset according to the split ratio
 def get_splits(train_data, test_data, split_ratio=0.1):
     '''
         input: train_data, test_data, split_ratio
@@ -45,6 +47,7 @@ def get_splits(train_data, test_data, split_ratio=0.1):
     y_test = [x['intent'] for x in test_data]
     return train_raw, dev_raw, test_data, y_train, y_dev, y_test 
 
+# Taken from lab
 class Lang():
     def __init__(self, words, intents, slots, cutoff=0):
         self.word2id = self.w2id(words, cutoff=cutoff, unk=True)
@@ -71,7 +74,8 @@ class Lang():
         for elem in elements:
                 vocab[elem] = len(vocab)
         return vocab
-    
+
+# Taken from lab
 class IntentsAndSlots (data.Dataset):
     # Mandatory methods are __init__, __len__ and __getitem__
     def __init__(self, dataset, lang, unk='unk'):
@@ -116,6 +120,7 @@ class IntentsAndSlots (data.Dataset):
             res.append(tmp_seq)
         return res
 
+# Taken from lab
 def collate_fn(data):
     def merge(sequences):
         '''

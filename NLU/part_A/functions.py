@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
+# Taken from lab
 def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=5):
     model.train()
     loss_array = []
@@ -23,6 +24,7 @@ def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=
         optimizer.step() # Update the weights
     return loss_array
 
+# Taken from lab
 def eval_loop(data, criterion_slots, criterion_intents, model, lang):
     model.eval()
     loss_array = []
@@ -76,6 +78,7 @@ def eval_loop(data, criterion_slots, criterion_intents, model, lang):
                                           zero_division=False, output_dict=True)
     return results, report_intent, loss_array
 
+# Taken from lab
 def init_weights(mat):
     for m in mat.modules():
         if type(m) in [nn.GRU, nn.LSTM, nn.RNN]:
@@ -96,6 +99,7 @@ def init_weights(mat):
                 if m.bias != None:
                     m.bias.data.fill_(0.01)
 
+# Plot and save the training and validation loss
 def plot_losses(epochs, train_loss, dev_loss, save_path, title="Training and Validation Loss"):
     plt.figure(figsize=(8, 6))
     plt.title(title)
@@ -109,6 +113,7 @@ def plot_losses(epochs, train_loss, dev_loss, save_path, title="Training and Val
     plt.savefig(save_path)
     plt.close()
 
+# Buld the model name based on the application of dropout layer and bidirectionality
 def build_model_name(lr, slot_f1s, intent_acc, bidirectional=False, dropout=False):
     name_parts = ["IAS"]
     
@@ -123,6 +128,7 @@ def build_model_name(lr, slot_f1s, intent_acc, bidirectional=False, dropout=Fals
     
     return "_".join(name_parts)
 
+# Save result in /results
 def save_experiment_results(model, optimizer, n_epochs, lr, hid_size, emb_size, slot_f1s, intent_acc,
                             losses_train, losses_dev, runs, dropout, bidirectional, patience, model_name, results_dir="results"):
     

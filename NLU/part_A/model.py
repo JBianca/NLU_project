@@ -14,7 +14,7 @@ class ModelIAS(nn.Module):
         self.embedding = nn.Embedding(vocab_len, emb_size, padding_idx=pad_index)
         self.utt_encoder = nn.LSTM(emb_size, hid_size, n_layer, bidirectional=use_bidirectional, batch_first=True)    
         
-        # Dropout layer How/Where do we apply it?
+        # Apply dropout layers
         if use_drop:
             self.dropout = nn.Dropout(dropout)
         else:
@@ -24,9 +24,11 @@ class ModelIAS(nn.Module):
         self.intent_out = nn.Linear(hid_size * self.num_directions, out_int)
          
     def forward(self, utterance, seq_lengths):
+        
         # utterance.size() = batch_size X seq_len
         utt_emb = self.embedding(utterance) # utt_emb.size() = batch_size X seq_len X emb_size
         utt_emb = self.dropout(utt_emb)
+        
         # pack_padded_sequence avoid computation over pad tokens reducing the computational cost
         packed_input = pack_padded_sequence(utt_emb, seq_lengths.cpu().numpy(), batch_first=True)
 

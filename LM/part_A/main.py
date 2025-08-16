@@ -14,7 +14,6 @@ import argparse
 
 if __name__ == "__main__":
     
-    ######################################################################################################### data preparation 
     # Use cuda if available, otherwise cpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -32,10 +31,7 @@ if __name__ == "__main__":
     dev_dataset = PennTreeBank(dev_raw, lang)
     test_dataset = PennTreeBank(test_raw, lang)
 
-    '''
-    --> try with all the combinations
-    [(32, 64), (32, 128), (64, 64), (64, 128), (128, 64), (128, 128)]
-    '''
+    # Try with different batch sizes
     batch_train = 64 
     batch_dev_test = 128
 
@@ -44,16 +40,7 @@ if __name__ == "__main__":
     dev_loader = DataLoader(dev_dataset, batch_size=batch_dev_test, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
     test_loader = DataLoader(test_dataset, batch_size=batch_dev_test, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
 
-    ######################################################################################################### parameters configuration
-
-    '''
-    Experiment also with a smaller or bigger model by changing hid and emb sizes
-    A large model tends to overfit
-    Don't forget to experiment with a lower training batch size
-    Increasing the back propagation steps can be seen as a regularization step
-    With SGD try with an higher learning rate (> 1 for instance)
-    ''' 
-
+    # Parameters setting ==========================================================================
     hid_size = 200
     emb_size = 300
     vocab_len = len(lang.word2id)
@@ -65,8 +52,7 @@ if __name__ == "__main__":
     emb_dropout = 0.1
     weight_decay = 0.05
     n_layers = 1
-
-    ##############################################################
+    # Parameters setting ==========================================================================
    
     losses_train = []
     losses_dev = []
@@ -76,7 +62,7 @@ if __name__ == "__main__":
     best_model = None
     pbar = tqdm(range(1,n_epochs+1))
     
-    ######################################################################################################### model
+    # Model
     '''
     run example: python3 main.py --model lstm --optimizer sgd
     '''
@@ -114,7 +100,7 @@ if __name__ == "__main__":
     criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
     criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')
     
-    ######################################################################################################### train the model
+    # Train and validation of the model
   
     # If the PPL is too high try to change the learning rate
     for epoch in pbar:

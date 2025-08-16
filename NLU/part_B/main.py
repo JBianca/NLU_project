@@ -2,16 +2,13 @@ from functions import *
 from utils import *
 from model import *
 import numpy as np
-from sklearn.model_selection import train_test_split
-from collections import Counter
 from torch.utils.data import DataLoader
 from torch import optim
 import torch
 from tqdm import tqdm
 import os
-import matplotlib.pyplot as plt
 import copy
-from transformers import BertTokenizer, BertConfig
+from transformers import BertTokenizer
 from model import JointBert
 
 
@@ -20,7 +17,6 @@ if __name__ == "__main__":
     PAD_TOKEN = 0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    config = BertConfig.from_pretrained('bert-base-uncased')
 
     # Load dataset
     train_data = load_data(os.path.join('dataset','ATIS','train.json'))
@@ -44,8 +40,7 @@ if __name__ == "__main__":
     dev_loader = DataLoader(dev_dataset, batch_size=64, collate_fn=collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=64, collate_fn=collate_fn)
 
-     # Parameters setting ==========================================================================
-  
+    # Parameters setting ==========================================================================
     hid_size = 768
     emb_size = 300
     lr = 0.0002
@@ -53,7 +48,6 @@ if __name__ == "__main__":
     n_epochs = 50
     dropout = 0.1
     patience = 5
-
     # Parameters setting ==========================================================================
 
     out_slot = len(lang.slot2id)
@@ -62,10 +56,11 @@ if __name__ == "__main__":
     slot_f1s = []
     intent_acc = []
 
-    # model = model = JointBert(config, out_slot, out_int, dropout=dropout).to(device)
-    model = JointBert(hid_size, out_slot, out_int, dropout_prob=dropout).to(device)
+    # Initialize the model for Intent and Slot classification
+    model = JointBert(hid_size, out_slot, out_int, dropout=dropout).to(device)
     model.apply(init_weights)
 
+    # Set optimizer and loss functions
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion_slots = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
     criterion_intents = nn.CrossEntropyLoss()
@@ -75,9 +70,10 @@ if __name__ == "__main__":
     sampled_epochs = []
     best_f1 = 0.0
     
+    # Training loop
     for x in tqdm(range(1,n_epochs)):
         loss = train_loop(train_loader, optimizer, criterion_slots, 
-                        criterion_intents, model)
+                        criterion_intents, model, clip=clip)
         if x % 1 == 0:
             sampled_epochs.append(x)
             losses_train.append(np.asarray(loss).mean())
@@ -85,7 +81,7 @@ if __name__ == "__main__":
             losses_dev.append(np.asarray(loss_dev).mean())
             f1 = results_dev['total']['f']
             
-
+            # Save best model based on F1 score
             if f1 > best_f1:
                 best_f1 = f1
                 best_model = copy.deepcopy(model).to(device)
@@ -93,14 +89,13 @@ if __name__ == "__main__":
             else:
                 patience -= 1
             if patience <= 0: # Early stopping with patient
-                break # Not nice but it keeps the code clean
+                break 
 
+    # Load best model for testing
+    best_model.to(device)
     results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, criterion_intents, best_model, lang, tokenizer)
     intent_acc.append(intent_test['accuracy'])
     slot_f1s.append(results_test['total']['f'])
-
-    slot_f1s = np.asarray(slot_f1s)
-    intent_acc = np.asarray(intent_acc)
 
     model_name = build_model_name(
         lr=lr,

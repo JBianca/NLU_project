@@ -5,14 +5,15 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 import numpy as np
 import os
-from transformers import BertConfig, BertTokenizer
+from transformers import BertTokenizer
 
+# Taken from lab with modification 
 def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=5):
     model.train()
     loss_array = []
     for sample in data:
         optimizer.zero_grad() # Zeroing the gradient
-        slots, intent = model(sample['utterances'], sample['attentions'], sample['token_type_ids'])
+        slots, intent = model(sample['utterances'], sample['attentions'], sample['token_type_ids']) 
         loss_intent = criterion_intents(intent, sample['intents'])
         loss_slot = criterion_slots(slots, sample['y_slots'])
         # assert slots.shape == sample['y_slots'].shape, f"slots have different shapes: {slots.shape}, {sample['y_slots'].shape}"
@@ -25,6 +26,7 @@ def train_loop(data, optimizer, criterion_slots, criterion_intents, model, clip=
         optimizer.step() # Update the weights
     return loss_array
 
+# Taken from lab with modification 
 def eval_loop(data, criterion_slots, criterion_intents, model, lang, tokenizer):
     model.eval()
     loss_array = []
@@ -66,7 +68,7 @@ def eval_loop(data, criterion_slots, criterion_intents, model, lang, tokenizer):
                 new_gt_slots = []
                 new_to_decode = []
 
-                #removing padding token from the gt_slots, ref_slots and utterance
+                # Removing padding token from the gt_slots, ref_slots and utterance
                 for index, slot in enumerate(gt_slots):
                     if slot != 'pad':
                         new_gt_slots.append(slot)
@@ -98,6 +100,7 @@ def eval_loop(data, criterion_slots, criterion_intents, model, lang, tokenizer):
                                           zero_division=False, output_dict=True)
     return results, report_intent, loss_array
 
+# Taken from lab with modification 
 def init_weights(mat):
     for n, m in mat.named_modules():
         if type(m) in [nn.GRU, nn.LSTM, nn.RNN]:
@@ -120,6 +123,7 @@ def init_weights(mat):
                     if m.bias != None:
                         m.bias.data.fill_(0.01)
 
+# Plot and save the training and validation loss
 def plot_losses(epochs, train_loss, dev_loss, save_path, title="Training and Validation Loss"):
     plt.figure(figsize=(8, 6))
     plt.title(title)
@@ -133,6 +137,7 @@ def plot_losses(epochs, train_loss, dev_loss, save_path, title="Training and Val
     plt.savefig(save_path)
     plt.close()
 
+# Buld the model name based on the result
 def build_model_name(lr, slot_f1s, intent_acc, dropout=False):
     name_parts = ["Bert"]
     name_parts.append(f"lr{lr}")

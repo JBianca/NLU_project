@@ -15,7 +15,7 @@ class VariationalDropout(nn.Module):
         mask = mask.expand_as(x)
         return mask * x
 
-
+# LSTM with weight tying and variational dropout as boolean variable setting
 class LM_LSTM(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0,
                  out_dropout=0.1, emb_dropout=0.1, n_layers=1,

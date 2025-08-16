@@ -51,10 +51,9 @@ if __name__ == "__main__":
     clip = 5 # Clip the gradient
     n_epochs = 200
     runs = 5
-    dropout = False
-    bidirectional = False
+    use_dropout = False
+    use_bidirectional = False
     patience_init = 3
-
     # Parameters setting ==========================================================================
 
     out_slot = len(lang.slot2id)
@@ -63,24 +62,31 @@ if __name__ == "__main__":
     slot_f1s = []
     intent_acc = []
 
+    # Run the experiment for a given number of runs
     for x in tqdm(range(0, runs)):
         
-        model = ModelIAS(hid_size, out_slot, out_int, emb_size, vocab_len, pad_index=PAD_TOKEN, use_drop=dropout, use_bidirectional=bidirectional).to(device)
+        # Initialize the model for Intent and Slot classification
+        model = ModelIAS(hid_size, out_slot, out_int, emb_size, vocab_len, pad_index=PAD_TOKEN, use_drop=use_dropout, use_bidirectional=use_bidirectional).to(device)
         model.apply(init_weights)
 
+        # Set optimizer and loss functions
         optimizer = optim.Adam(model.parameters(), lr=lr)
         criterion_slots = nn.CrossEntropyLoss(ignore_index=PAD_TOKEN)
         criterion_intents = nn.CrossEntropyLoss()
 
+        # Early stopping parameters
         patience = 3
         losses_train = []
         losses_dev = []
         sampled_epochs = []
         best_f1 = 0.0
 
+        # Training loop
         for x in range(1,n_epochs+1):
             loss = train_loop(train_loader, optimizer, criterion_slots, 
                             criterion_intents, model, clip=clip)
+            
+            # Evaluate every 5 epochs
             if x % 5 == 0:
                 sampled_epochs.append(x)
                 losses_train.append(np.asarray(loss).mean())
@@ -89,31 +95,34 @@ if __name__ == "__main__":
                 losses_dev.append(np.asarray(loss_dev).mean())
                 f1 = results_dev['total']['f']
 
+                # Save best model based on F1 score
                 if f1 > best_f1:
                     best_f1 = f1
                     best_model = copy.deepcopy(model).to(device)
                     patience = patience_init
                 else:
                     patience -= 1
+                
                 if patience <= 0: # Early stopping with patient
                     break
-
+        
+        # Load best model for testing
         best_model.to(device)
         results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, 
                                                 criterion_intents, model, lang)
         intent_acc.append(intent_test['accuracy'])
         slot_f1s.append(results_test['total']['f'])
-
+        
         model_name = build_model_name(
             lr=lr,
             slot_f1s=slot_f1s,
             intent_acc=intent_acc,
-            bidirectional=bidirectional,
-            dropout=dropout
+            bidirectional=use_bidirectional,
+            dropout=use_dropout
         )
         
     slot_f1s = np.asarray(slot_f1s)
     intent_acc = np.asarray(intent_acc)
 
     save_experiment_results(model, optimizer=optimizer, n_epochs=n_epochs, lr=lr, hid_size=hid_size, emb_size=emb_size, slot_f1s=slot_f1s, intent_acc=intent_acc,
-                            losses_train=losses_train, losses_dev=losses_dev, runs=runs, dropout=dropout, bidirectional=bidirectional, patience=patience_init, model_name=model_name)
+                            losses_train=losses_train, losses_dev=losses_dev, runs=runs, dropout=use_dropout, bidirectional=use_bidirectional, patience=patience_init, model_name=model_name)
