@@ -107,7 +107,6 @@ if __name__ == "__main__":
                     break
         
         # Load best model for testing
-        best_model.to(device)
         results_test, intent_test, _ = eval_loop(test_loader, criterion_slots, 
                                                 criterion_intents, model, lang)
         intent_acc.append(intent_test['accuracy'])
