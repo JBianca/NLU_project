@@ -1,0 +1,8 @@
+Epoch: 23
+LR: 0.0001
+Optimizer: AdamW
+Slot F1: 0.953 ± 0.000
+Intent Acc: 0.972 ± 0.000
+Dropout: 0.2
+Patience: 0
+Best dev F1: 0.981
